@@ -1,0 +1,33 @@
+{
+  "name": "hubot-whereyouat",
+  "version": "1.0.0",
+  "description": "Know where all the out of office staff are and the time they left.",
+  "main": "index.coffee",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/treindle/hubot-whereyouat.git"
+  },
+  "keywords": [
+    "hubot",
+    "out",
+    "of",
+    "office",
+    "hubot",
+    "be",
+    "right",
+    "back",
+    "hubot",
+    "where",
+    "is",
+    "user"
+  ],
+  "author": "Teresa Nededog",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/treindle/hubot-whereyouat/issues"
+  },
+  "homepage": "https://github.com/treindle/hubot-whereyouat#readme"
+}
