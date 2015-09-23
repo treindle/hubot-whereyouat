@@ -1,6 +1,3 @@
-# hubot-whereyouat
-node module for hubot to check the status of all out of office staff
-
 # Description:
 #   Records time and away message users set.
 #
@@ -40,3 +37,9 @@ node module for hubot to check the status of all out of office staff
 #
 # Author:
 #   Teresa Nededog
+
+module.exports = (robot) -> 
+
+  robot.respond /(I am|I'm|I'll) (be|in|at) (back|in|at|on|under|above)/i, (text)
+    user = text.match[1]
+    message = text.match[2]
