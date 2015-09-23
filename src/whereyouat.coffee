@@ -38,8 +38,63 @@
 # Author:
 #   Teresa Nededog
 
-module.exports = (robot) -> 
+cronTask = require('cron').CronTask
+moment = require('moment')
 
-  robot.respond /(I am|I'm|I'll) (be|in|at) (back|in|at|on|under|above)/i, (text)
-    user = text.match[1]
-    message = text.match[2]
+TASK = {}
+
+createNewTask = (robot, pattern, user, message) ->
+  id = Math.floor(Math.random() * 1000000) while !id? || TASK[id]
+  text = registerNewTask robot, id, pattern, user, message
+  robot.brain.data.things[id] = text.serialize()
+  id
+
+registerNewTaskFromBrain = (robot, id, pattern, user, message) ->
+  registerNewTask(robot, id, pattern, user, message)
+
+registerNewTask = (robot, id, pattern, user, message) ->
+  text = new Task(id, pattern, user, message)
+  text.start(robot)
+  TASK[id] = text
+
+unregisterTask = (robot, user)->
+  if TASK[user]
+    TASK[user].stop()
+    delete robot.brain.data.ooo[user]
+    delete TASK[user]
+    return yes
+  no
+
+handleNewTask = (robot, msg, user, pattern, message) ->
+    id = createNewText robot, pattern, user, message
+    msg.send "Alright #{user.name}. #{pattern} recorded"
+
+
+module.exports = (robot) -> 
+#ooo means "Out Of Office"
+  robot.brain.data.ooo or = {}
+
+  robot.brain.on 'loaded', ->
+    for own id, task of robot.brain.data.ooo
+      console.log id
+      registerNewTaskFromBrain robot, id, task...
+
+  robot.respond /(I am|I'm|I'll) (be|in|at) (back|in|at|on|under|above)/i, (msg)
+    text = ''
+      for id, task of TASKS
+        room = task.user.reply_to || task.user.room
+        if room == msg.message.user.reply_to or room == msg.message.user.room
+          text += "#{id}: #{task.pattern} @#{room} \"#{task.message}\"\n"
+      if text.length > 0
+        msg.send text
+      else
+        msg.send "Got nothing! We should all be present!"
+
+  robot.respond /(forget|rm|remove) task (\d+)/i, (msg) ->
+    reqId = msg.match[2]
+    for id, task of TASKS
+      if (reqId == id)
+        if unregisterTask(robot, reqId)
+          msg.send "Task #{this.id} sleep with the fishes..."
+        else
+          msg.send ":haunted: Can't seem to forget about it..."
