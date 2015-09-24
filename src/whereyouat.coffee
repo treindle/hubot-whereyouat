@@ -2,8 +2,8 @@
 #   Records time and away message users set.
 #
 # Dependencies:
-#   none
-#
+#   "cron": "^1.0.5",
+#   "moment": "^2.8.3"
 # Configuration:
 #   none
 #
