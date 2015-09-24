@@ -25,7 +25,7 @@
 
 #   bosslady: @hubot: where is tdogg? 
 
-#   hubot: @boss, it is Wed Sep 23 2015 18:50:06 GMT+0000 (UTC) and tdogg said, "I'll be back in 20." on Wed Sep 23 2015 18:31:41 GMT+0000 (UTC)
+#   hubot: @boss, it is Wed Sep 23 2015 18:50:06 GMT+0000 (UTC) and tdogg sa, "I'll be back in 20." on Wed Sep 23 2015 18:31:41 GMT+0000 (UTC)
 
 #   bosslady: @tdogg! You got 1 minute! ;) 
 
@@ -44,18 +44,18 @@ moment = require('moment')
 TASK = {}
 
 createNewTask = (robot, pattern, user, message) ->
-  id = Math.floor(Math.random() * 1000000) while !id? || TASK[id]
-  text = registerNewTask robot, id, pattern, user, message
-  robot.brain.data.things[id] = text.serialize()
-  id
+  user = Math.floor(Math.random() * 1000000) while !user? || TASK[user]
+  text = registerNewTask robot, user, pattern, user, message
+  robot.brain.data.things[user] = text.serialize()
+  user
 
-registerNewTaskFromBrain = (robot, id, pattern, user, message) ->
-  registerNewTask(robot, id, pattern, user, message)
+registerNewTaskFromBrain = (robot, user, pattern, user, message) ->
+  registerNewTask(robot, user, pattern, user, message)
 
-registerNewTask = (robot, id, pattern, user, message) ->
-  text = new Task(id, pattern, user, message)
+registerNewTask = (robot, user, pattern, user, message) ->
+  text = new Task(user, pattern, user, message)
   text.start(robot)
-  TASK[id] = text
+  TASK[user] = text
 
 unregisterTask = (robot, user)->
   if TASK[user]
@@ -66,7 +66,7 @@ unregisterTask = (robot, user)->
   no
 
 handleNewTask = (robot, msg, user, pattern, message) ->
-    id = createNewText robot, pattern, user, message
+    user = createNewText robot, pattern, user, message
     msg.send "Alright #{user.name}. #{pattern} recorded"
 
 
@@ -75,26 +75,81 @@ module.exports = (robot) ->
   robot.brain.data.ooo or = {}
 
   robot.brain.on 'loaded', ->
-    for own id, task of robot.brain.data.ooo
-      console.log id
-      registerNewTaskFromBrain robot, id, task...
+    for own user, task of robot.brain.data.ooo
+      console.log user
+      registerNewTaskFromBrain robot, user, task...
 
-  robot.respond /(I am|I'm|I'll) (be|in|at) (back|in|at|on|under|above)/i, (msg)
+  robot.respond /where is ([\w\-]+)/i, (msg) ->
     text = ''
-      for id, task of TASKS
+      for user, task of TASKS
         room = task.user.reply_to || task.user.room
         if room == msg.message.user.reply_to or room == msg.message.user.room
-          text += "#{id}: #{task.pattern} @#{room} \"#{task.message}\"\n"
+          text += "#{user}: #{task.pattern} @#{room} \"#{task.message}\"\n"
       if text.length > 0
         msg.send text
       else
         msg.send "Got nothing! We should all be present!"
 
-  robot.respond /(forget|rm|remove) task (\d+)/i, (msg) ->
-    reqId = msg.match[2]
-    for id, task of TASKS
-      if (reqId == id)
-        if unregisterTask(robot, reqId)
-          msg.send "Task #{this.id} sleep with the fishes..."
+  robot.respond /(I'm back|back)/i, (msg) ->
+    reqUser = msg.match[2]
+    for user, task of TASKS
+      if (reqUser == user)
+        if unregisterTask(robot, reqUser)
+          msg.send "Task #{user} sleep with the fishes..."
         else
           msg.send ":haunted: Can't seem to forget about it..."
+
+  robot.respond /(.*) (I am|I'm|I'll) (be|in|at) (out|back|in|at|on|under|above) (.*) (in|for) (\d+)([s|m|h|d])/i, (msg) ->
+    name = msg.match[1]
+    at = msg.match[2]
+    time = msg.match[3]
+    something = msg.match[4]
+
+    if /^me$/i.test(name.trim())
+      users = [msg.message.user]
+    else
+      users = robot.brain.usersForFuzzyName(name)
+
+    if users.length is 1
+      switch time
+        when 's' then handleNewJob robot, msg, users[0], moment().add(at, "second").toDate(), something
+        when 'm' then handleNewJob robot, msg, users[0], moment().add(at, "minute").toDate(), something
+        when 'h' then handleNewJob robot, msg, users[0], moment().add(at, "hour").toDate(), something
+        when 'd' then handleNewJob robot, msg, users[0], moment().add(at, "day").toDate(), something
+    else if users.length > 1
+      msg.send "Be more specific, I know #{users.length} people " +
+        "named like that: #{(user.name for user in users).join(", ")}"
+    else
+      msg.send "#{name}? Never heard of 'em"
+
+  class Job
+  constructor: (pattern, user, message) ->
+    @pattern = pattern
+    # cloning user because adapter may touch it later
+    clonedUser = {}
+    clonedUser[k] = v for k,v of user
+    @user = clonedUser
+    @message = message
+
+  start: (robot) ->
+    @cronjob = new cronJob(@pattern, =>
+      @sendMessage robot, ->
+      unregisterJob robot
+    )
+    @cronjob.start()
+
+  stop: ->
+    @cronjob.stop()
+
+  serialize: ->
+    [@pattern, @user, @message]
+
+  sendMessage: (robot) ->
+    envelope = user: @user, room: @user.room
+    message = @message
+    if @user.mention_name
+      message = "Hey @#{envelope.user.mention_name} remember: " + @message
+    else
+      message = "Hey @#{envelope.user.name} remember: " + @message
+    robot.send envelope, message
+
