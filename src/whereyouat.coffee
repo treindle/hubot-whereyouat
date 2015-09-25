@@ -1,37 +1,14 @@
-# Description:
-#   This is an extention of hubot-rememberto https://github.com/wdalmut/hubot-rememberto
-#   Records time and away message users set.
-#
 # Dependencies:
-#   "cron": "^1.0.5",
-#   "moment": "^2.8.3"
+#   None
+#
 # Configuration:
-#   none
+#   None
 #
 # Commands:
-#   hubot For <indicate numeric value><s|m|h|d> I will be <text> - Hubot will save the user's away message and time message was set.
-#   hubot where is <user> - Hubot will respond with the away message and time away message was set.
+#   hubot for <indicate numeric value><s|m|h|d> <away message> - Save the user's away message and time message was set.
+#   hubot where is <user> - User's current away message and time
 #   hubot back - Away message will be cleared
-#
-# Notes:
-#   tdogg: @hubot: For 20m I will be out of office.
 
-#   hubot: Got it tdogg! Away message set at Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
-
-#   bosslady: @hubot: where is tdogg? 
-
-#   hubot: tdogg said they'll be ooo on Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
-
-#   bosslady: @tdogg! You got 1 minute! ;) 
-
-#   tdogg: @hubot: back! 
-
-#   hubot: @tdogg, Welcome back!
-
-#   bosslady: @tdogg, with 1 second remaining! Nice! 
-#
-# Author:
-#   Teresa Nededog
 
 cronJob = require('cron').CronJob
 moment = require('moment')
@@ -76,7 +53,7 @@ module.exports = (robot) ->
     user = msg.match[1]
     for id, job of JOBS
       if id == user
-        text += "#{id} said they'll #{job.message} on #{job.pattern}"
+        text += "#{id} said: #{job.message} on #{job.pattern}"
     if text.length > 0
       msg.send text
     else
@@ -92,17 +69,12 @@ module.exports = (robot) ->
       else
         msg.send ":fearful: @#{name}, didn't even know you were gone!"
 
-
-  robot.respond /for (\d+)([s|m|h|d]) (.*) will (.*)/i, (msg) ->
-    name = msg.match[3]
+  robot.respond /for (\d+)([s|m|h|d]) (.*)/i, (msg) ->
+    users = [msg.message.user]
+    name = users[0].name
     at = msg.match[1]
     time = msg.match[2]
-    something = msg.match[4]
-
-    if /^(i)$/i.test(name.trim())
-      users = [msg.message.user]
-    else
-      users = robot.brain.usersForFuzzyName(name)
+    something = msg.match[3]
 
     if users.length is 1
       switch time
@@ -129,8 +101,7 @@ class Job
 
   start: (robot) ->
     @cronjob = new cronJob(@pattern, =>
-      @sendMessage robot, ->
-      unregisterJob robot, @id
+      @sendMessage robot
     )
     @cronjob.start()
 
