@@ -1,41 +1,11 @@
 # Description:
-#   Records time and away message users set.
-#
-# Dependencies:
-#   "cron": "^1.0.5",
-#   "moment": "^2.8.3"
-# Configuration:
-#   none
+#   Remember to someone something
 #
 # Commands:
-#   hubot I am in <text>
-#         I'm in <text>
-#         I am at <text>
-#         I'm at <text>
-#         I will be back/in/at/on/under <text>
-#         I'll be back/in/at/on/under/above <text> -Hubot will save the user's away message and time message was set.
-#   hubot where is <user> - Hubot will respond with the away message and time away message was set.
-#   hubot user is back - Away message will be cleared
-#
-# Notes:
-#   tdogg: @hubot: I'll be back in 20.
-
-#   hubot: tdogg, your away message "I'll be back in 20" has been recorded from Wed Sep 23 2015 18:31:00 GMT+0000 (UTC)
-
-#   bosslady: @hubot: where is tdogg? 
-
-#   hubot: @boss, it is Wed Sep 23 2015 18:50:06 GMT+0000 (UTC) and tdogg sa, "I'll be back in 20." on Wed Sep 23 2015 18:31:41 GMT+0000 (UTC)
-
-#   bosslady: @tdogg! You got 1 minute! ;) 
-
-#   tdogg: @hubot: I'm back! 
-
-#   hubot: @tdogg! Welcome back! Your away message has been cleared on Wed Sep 23 2015 18:50:59 GMT+0000 (UTC)
-
-#   bosslady: @tdogg, with 1 second remaining! Nice! 
-#
-# Author:
-#   Teresa Nededog
+#   hubot remember to <user> in <val with unit> <something to remember> - Remember to someone something in a given time eg 5m for five minutes
+#   hubot what do you remember? - Show active jobs
+#   hubot forget job <id> - Remove a given job
+#   hubot rm job <id> - Remove a given job
 
 cronJob = require('cron').CronJob
 moment = require('moment')
@@ -67,14 +37,12 @@ unregisterJob = (robot, id, user)->
 handleNewJob = (robot, msg, user, pattern, message, time) ->
     id = createNewJob robot, pattern, user, message, time
     msg.send "Got it #{user.name}! Away message set at #{pattern}"
-
 module.exports = (robot) ->
   robot.brain.data.things or= {}
 
   # The module is loaded right now
   robot.brain.on 'loaded', ->
     for own id, job of robot.brain.data.things
-      console.log id
       registerNewJobFromBrain robot, id, job, time...
 
   robot.respond /where is ([\w\-]+)/i, (msg) ->
@@ -82,14 +50,15 @@ module.exports = (robot) ->
     user = msg.match[1]
     for id, job of JOBS
       if id == user
-        text += "#{id} said they'll #{job.message} on #{job.pattern} "
+        text += "#{id} said they'll #{job.message} on #{job.pattern}"
     if text.length > 0
       msg.send text
     else
       msg.send "Don't know what to tell you about @#{user}"
 
-  robot.respond /(.*) is back/i, (msg) ->
-    name = msg.match[1]
+  robot.respond /back/i, (msg) ->
+    users = [msg.message.user]
+    name = users[0].name
     for id, job of JOBS
       if (id == name)
         unregisterJob(robot, name)
@@ -120,6 +89,7 @@ module.exports = (robot) ->
         "named like that: #{(user.name for user in users).join(", ")}"
     else
       msg.send "#{name}? Never heard of 'em"
+
 
 
 
