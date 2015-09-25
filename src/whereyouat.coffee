@@ -15,8 +15,7 @@
 #         I will be back/in/at/on/under <text>
 #         I'll be back/in/at/on/under/above <text> -Hubot will save the user's away message and time message was set.
 #   hubot where is <user> - Hubot will respond with the away message and time away message was set.
-#   hubot I'm back
-#         back - Away message will be cleared with time of return
+#   hubot user is back - Away message will be cleared
 #
 # Notes:
 #   tdogg: @hubot: I'll be back in 20.
@@ -38,74 +37,74 @@
 # Author:
 #   Teresa Nededog
 
-cronTask = require('cron').CronTask
+cronJob = require('cron').CronJob
 moment = require('moment')
 
-TASK = {}
+JOBS = {}
 
-createNewTask = (robot, pattern, user, message) ->
-  user = Math.floor(Math.random() * 1000000) while !user? || TASK[user]
-  text = registerNewTask robot, user, pattern, user, message
-  robot.brain.data.things[user] = text.serialize()
-  user
+createNewJob = (robot, pattern, user, message, time) ->
+  id = user.name || JOBS[id]
+  job = registerNewJob robot, id, pattern, user, message, time
+  robot.brain.data.things[id] = job.serialize()
+  id
 
-registerNewTaskFromBrain = (robot, user, pattern, user, message) ->
-  registerNewTask(robot, user, pattern, user, message)
+registerNewJobFromBrain = (robot, id, pattern, user, message, time) ->
+  registerNewJob(robot, id, pattern, user, message, time)
 
-registerNewTask = (robot, user, pattern, user, message) ->
-  text = new Task(user, pattern, user, message)
-  text.start(robot)
-  TASK[user] = text
+registerNewJob = (robot, id, pattern, user, message, time) ->
+  job = new Job(id, pattern, user, message, time)
+  job.start(robot)
+  JOBS[id] = job
 
-unregisterTask = (robot, user)->
-  if TASK[user]
-    TASK[user].stop()
-    delete robot.brain.data.ooo[user]
-    delete TASK[user]
+unregisterJob = (robot, id, user)->
+  if JOBS[id]
+    JOBS[id].stop()
+    delete robot.brain.data.things[id]
+    delete JOBS[id]
     return yes
   no
 
-handleNewTask = (robot, msg, user, pattern, message) ->
-    user = createNewText robot, pattern, user, message
-    msg.send "Alright #{user.name}. #{pattern} recorded"
+handleNewJob = (robot, msg, user, pattern, message, time) ->
+    id = createNewJob robot, pattern, user, message, time
+    msg.send "Got it #{user.name}! Away message set at #{pattern}"
 
+module.exports = (robot) ->
+  robot.brain.data.things or= {}
 
-module.exports = (robot) -> 
-#ooo means "Out Of Office"
-  robot.brain.data.ooo or = {}
-
+  # The module is loaded right now
   robot.brain.on 'loaded', ->
-    for own user, task of robot.brain.data.ooo
-      console.log user
-      registerNewTaskFromBrain robot, user, task...
+    for own id, job of robot.brain.data.things
+      console.log id
+      registerNewJobFromBrain robot, id, job, time...
 
   robot.respond /where is ([\w\-]+)/i, (msg) ->
     text = ''
-      for user, task of TASKS
-        room = task.user.reply_to || task.user.room
-        if room == msg.message.user.reply_to or room == msg.message.user.room
-          text += "#{user}: #{task.pattern} @#{room} \"#{task.message}\"\n"
-      if text.length > 0
-        msg.send text
-      else
-        msg.send "Got nothing! We should all be present!"
+    user = msg.match[1]
+    for id, job of JOBS
+      if id == user
+        text += "#{id} said they'll #{job.message} on #{job.pattern} "
+    if text.length > 0
+      msg.send text
+    else
+      msg.send "Don't know what to tell you about @#{user}"
 
-  robot.respond /(I'm back|back)/i, (msg) ->
-    reqUser = msg.match[2]
-    for user, task of TASKS
-      if (reqUser == user)
-        if unregisterTask(robot, reqUser)
-          msg.send "Task #{user} sleep with the fishes..."
-        else
-          msg.send ":haunted: Can't seem to forget about it..."
-
-  robot.respond /(.*) (I am|I'm|I'll) (be|in|at) (out|back|in|at|on|under|above) (.*) (in|for) (\d+)([s|m|h|d])/i, (msg) ->
+  robot.respond /(.*) is back/i, (msg) ->
     name = msg.match[1]
-    at = msg.match[2]
-    time = msg.match[3]
+    for id, job of JOBS
+      if (id == name)
+        unregisterJob(robot, name)
+        msg.send "@#{name}, welcome back! "
+      else
+        msg.send "@#{name}, didn't even know you were gone!"
+
+
+  robot.respond /for (\d+)([s|m|h|d]) (.*) will (.*)/i, (msg) ->
+    name = msg.match[3]
+    at = msg.match[1]
+    time = msg.match[2]
     something = msg.match[4]
 
-    if /^me$/i.test(name.trim())
+    if /^(i)$/i.test(name.trim())
       users = [msg.message.user]
     else
       users = robot.brain.usersForFuzzyName(name)
@@ -122,9 +121,13 @@ module.exports = (robot) ->
     else
       msg.send "#{name}? Never heard of 'em"
 
-  class Job
-  constructor: (pattern, user, message) ->
+
+
+class Job
+  constructor: (id, pattern, user, message, time) ->
+    @id = id
     @pattern = pattern
+    @time = time
     # cloning user because adapter may touch it later
     clonedUser = {}
     clonedUser[k] = v for k,v of user
@@ -134,7 +137,7 @@ module.exports = (robot) ->
   start: (robot) ->
     @cronjob = new cronJob(@pattern, =>
       @sendMessage robot, ->
-      unregisterJob robot
+      unregisterJob robot, @id
     )
     @cronjob.start()
 
@@ -142,14 +145,14 @@ module.exports = (robot) ->
     @cronjob.stop()
 
   serialize: ->
-    [@pattern, @user, @message]
+    [@pattern, @user, @message, @time]
 
   sendMessage: (robot) ->
-    envelope = user: @user, room: @user.room
+    envelope = user: @user, room: @user.room, time: @user.time
     message = @message
     if @user.mention_name
-      message = "Hey @#{envelope.user.mention_name} remember: " + @message
+      message = "Hey @#{envelope.user.mention_name}! You never checked back in!"
     else
-      message = "Hey @#{envelope.user.name} remember: " + @message
+      message = "Hey @#{envelope.user.name}! Time's up. Everything alright?"
     robot.send envelope, message
 
