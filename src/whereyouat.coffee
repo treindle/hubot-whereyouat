@@ -1,11 +1,37 @@
 # Description:
-#   Remember to someone something
+#   This is an extention of hubot-rememberto https://github.com/wdalmut/hubot-rememberto
+#   Records time and away message users set.
+#
+# Dependencies:
+#   "cron": "^1.0.5",
+#   "moment": "^2.8.3"
+# Configuration:
+#   none
 #
 # Commands:
-#   hubot remember to <user> in <val with unit> <something to remember> - Remember to someone something in a given time eg 5m for five minutes
-#   hubot what do you remember? - Show active jobs
-#   hubot forget job <id> - Remove a given job
-#   hubot rm job <id> - Remove a given job
+#   hubot For <indicate numeric value><s|m|h|d> I will be <text> - Hubot will save the user's away message and time message was set.
+#   hubot where is <user> - Hubot will respond with the away message and time away message was set.
+#   hubot back - Away message will be cleared
+#
+# Notes:
+#   tdogg: @hubot: For 20m I will be out of office.
+
+#   hubot: Got it tdogg! Away message set at Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
+
+#   bosslady: @hubot: where is tdogg? 
+
+#   hubot: tdogg said they'll be ooo on Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
+
+#   bosslady: @tdogg! You got 1 minute! ;) 
+
+#   tdogg: @hubot: back! 
+
+#   hubot: @tdogg, Welcome back!
+
+#   bosslady: @tdogg, with 1 second remaining! Nice! 
+#
+# Author:
+#   Teresa Nededog
 
 cronJob = require('cron').CronJob
 moment = require('moment')
@@ -54,7 +80,7 @@ module.exports = (robot) ->
     if text.length > 0
       msg.send text
     else
-      msg.send "Don't know what to tell you about @#{user}"
+      msg.send ":fearful: @#{user} didn't tell me where they'd be."
 
   robot.respond /back/i, (msg) ->
     users = [msg.message.user]
@@ -62,9 +88,9 @@ module.exports = (robot) ->
     for id, job of JOBS
       if (id == name)
         unregisterJob(robot, name)
-        msg.send "@#{name}, welcome back! "
+        msg.send "@#{name}, welcome back! :tada:"
       else
-        msg.send "@#{name}, didn't even know you were gone!"
+        msg.send ":fearful: @#{name}, didn't even know you were gone!"
 
 
   robot.respond /for (\d+)([s|m|h|d]) (.*) will (.*)/i, (msg) ->
@@ -89,9 +115,6 @@ module.exports = (robot) ->
         "named like that: #{(user.name for user in users).join(", ")}"
     else
       msg.send "#{name}? Never heard of 'em"
-
-
-
 
 class Job
   constructor: (id, pattern, user, message, time) ->
@@ -123,6 +146,5 @@ class Job
     if @user.mention_name
       message = "Hey @#{envelope.user.mention_name}! You never checked back in!"
     else
-      message = "Hey @#{envelope.user.name}! Time's up. Everything alright?"
+      message = "Hey @#{envelope.user.name}! Time's up. Everything alright? :worried:"
     robot.send envelope, message
-

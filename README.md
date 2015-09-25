@@ -1,8 +1,9 @@
 # hubot-whereyouat
-node module for hubot to check the status of all out of office staff
+  node module for hubot to check the status of the out of office staff
 
 # Description:
-   Records time and away message users set.
+  This is an extention of hubot-rememberto https://github.com/wdalmut/hubot-rememberto
+  Records time and away message users set.
 
 # Dependencies:
   "cron": "^1.0.5",
@@ -11,32 +12,28 @@ node module for hubot to check the status of all out of office staff
    none
 
 # Commands:
-   hubot I am in <text>
-         I'm in <text>
-         I am at <text>
-         I'm at <text>
-         I will be back/in/at/on/under <text>
-         I'll be back/in/at/on/under/above <text> -Hubot will save the user's away message and time message was set.
-   hubot where is <user> - Hubot will respond with the away message and time away message was set.
-   hubot I'm back
-         back - Away message will be cleared with time of return
+  hubot For <indicate numeric value><s|m|h|d> I will be <text> - Hubot will save the user's away message and time message was set.
+
+  hubot where is <user> - Hubot will respond with the away message and time away message was set.
+  
+  hubot back - Away message will be cleared
 
 # Notes:
-   tdogg: @hubot: I'll be back in 20.
+  tdogg: @hubot: For 20m I will be out of office.
 
-   hubot: tdogg, your away message "I'll be back in 20" has been recorded from Wed Sep 23 2015 18:31:00 GMT+0000 (UTC)
+  hubot: Got it tdogg! Away message set at Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
 
-   bosslady: @hubot: where is tdogg? 
+  bosslady: @hubot: where is tdogg? 
 
-   hubot: @boss, it is Wed Sep 23 2015 18:50:06 GMT+0000 (UTC) and tdogg said, "I'll be back in 20." on Wed Sep 23 2015 18:31:41 GMT+0000 (UTC)
+  hubot: tdogg said they'll be ooo on Fri Sep 25 2015 21:10:21 GMT+0000 (UTC)
 
-   bosslady: @tdogg! You got 1 minute! ;) 
+  bosslady: @tdogg! You got 1 minute! ;) 
 
-   tdogg: @hubot: I'm back! 
+  tdogg: @hubot: back! 
 
-   hubot: @tdogg! Welcome back! Your away message has been cleared on Wed Sep 23 2015 18:50:59 GMT+0000 (UTC)
+  hubot: @tdogg, Welcome back!
 
-   bosslady: @tdogg, with 1 second remaining! Nice! 
+  bosslady: @tdogg, with 1 second remaining! Nice! 
 
 # Author:
-   Teresa Nededog
+  Teresa Nededog
