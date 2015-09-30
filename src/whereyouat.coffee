@@ -52,12 +52,39 @@ module.exports = (robot) ->
     text = ''
     user = msg.match[1]
     for id, job of JOBS
+
+      #uncomment this code for timer
+      # time = Math.ceil(job.cronjob._timeout._idleTimeout / 1000)
+
+      #comment this code for timer
       if id == user
         text += "#{id} said: #{job.message} on #{job.pattern}"
+
+        #uncomment this code for timer
+        #if time < 60
+          #text += "#{id} said: #{job.message} for #{time} s on #{job.pattern}"
+        #else if time > 60 || time <= 3600
+          #text += "#{id} said: #{job.message} for #{time/60} m on #{job.pattern}"
+        #else if time > 3600 || time <= 86400
+          #text += "#{id} said: #{job.message} for #{time/3600} h on #{job.pattern}"
+        #else if time > 86400
+          #text += "#{id} said: #{job.message} for #{time/86400} d on #{job.pattern}"
+          
     if text.length > 0
       msg.send text
     else
       msg.send ":fearful: @#{user} didn't tell me where they'd be."
+
+  robot.respond /who's out/i, (msg) ->
+    text = ''
+    for id, job of JOBS
+      room = job.user.reply_to || job.user.room
+      if id == true
+        text += "#{id}\n"
+    if text.length > 0
+      msg.send text
+    else
+      msg.send "Everyone should be here!"
 
   robot.respond /back/i, (msg) ->
     users = [msg.message.user]
