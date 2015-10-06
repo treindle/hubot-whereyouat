@@ -3,7 +3,9 @@
 #   Records time and away message users set.
 #
 # Dependencies:
-#   None
+#   "cron"
+#   "moment"
+#   "moment-timezone"
 #
 # Configuration:
 #   None
