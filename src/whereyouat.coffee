@@ -11,7 +11,7 @@
 #   None
 #
 # Commands:
-#   hubot for <indicate numeric value><s|m|h|d> <away message> - Save the user's away message and time message was set.
+#   hubot <away message> for <indicate numeric value><s|m|h|d>  - Save the user's away message and time message was set.
 #   hubot where is <user> - User's current away message and time
 #   hubot back - Away message will be cleared
 
