@@ -1,3 +1,7 @@
+# Description:
+#   This is an extention of hubot-rememberto https://github.com/wdalmut/hubot-rememberto
+#   Records time and away message users set.
+#
 # Dependencies:
 #   None
 #
@@ -12,6 +16,7 @@
 
 cronJob = require('cron').CronJob
 moment = require('moment')
+tz = require('moment-timezone')
 
 JOBS = {}
 
@@ -58,7 +63,11 @@ module.exports = (robot) ->
 
       #comment this code for timer
       if id == user
-        text += "#{id} said: #{job.message} on #{job.pattern}"
+        serverTime = moment(job.pattern).format();
+        june = moment(serverTime)
+        psttime = june.tz('America/Los_Angeles').format('lll')
+        text += "On #{psttime} PST, #{id} said, \"#{job.message}\""
+
 
         #uncomment this code for timer
         #if time < 60
@@ -69,11 +78,22 @@ module.exports = (robot) ->
           #text += "#{id} said: #{job.message} for #{time/3600} h on #{job.pattern}"
         #else if time > 86400
           #text += "#{id} said: #{job.message} for #{time/86400} d on #{job.pattern}"
-          
+      
     if text.length > 0
       msg.send text
     else
       msg.send ":fearful: @#{user} didn't tell me where they'd be."
+
+  robot.respond /back/i, (msg) ->
+    users = [msg.message.user]
+    name = users[0].name
+    something = msg.match[1]
+    for id, job of JOBS
+      if (id == name)
+        unregisterJob(robot, name)
+        msg.send "@#{name}, welcome back! :tada:"
+      else
+        msg.send ":fearful: @#{name}, didn't even know you were gone!"
 
   robot.respond /who's out/i, (msg) ->
     text = ''
@@ -86,29 +106,20 @@ module.exports = (robot) ->
     else
       msg.send "Everyone should be here!"
 
-  robot.respond /back/i, (msg) ->
+  robot.respond /(.*) in (\d+)([s|m|h|d])/i, (msg) ->
     users = [msg.message.user]
     name = users[0].name
-    for id, job of JOBS
-      if (id == name)
-        unregisterJob(robot, name)
-        msg.send "@#{name}, welcome back! :tada:"
-      else
-        msg.send ":fearful: @#{name}, didn't even know you were gone!"
+    something = msg.match[1]
+    at = msg.match[2]
+    time = msg.match[3]
 
-  robot.respond /for (\d+)([s|m|h|d]) (.*)/i, (msg) ->
-    users = [msg.message.user]
-    name = users[0].name
-    at = msg.match[1]
-    time = msg.match[2]
-    something = msg.match[3]
 
     if users.length is 1
       switch time
         when 's' then handleNewJob robot, msg, users[0], moment().add(at, "second").toDate(), something
-        when 'm' then handleNewJob robot, msg, users[0], moment().add(at, "minute").toDate(), something
-        when 'h' then handleNewJob robot, msg, users[0], moment().add(at, "hour").toDate(), something
-        when 'd' then handleNewJob robot, msg, users[0], moment().add(at, "day").toDate(), something
+        when 'm' then handleNewJob robot, msg, users[0], moment().add(at, "minute").toDate(), at, time, something
+        when 'h' then handleNewJob robot, msg, users[0], moment().add(at, "hour").toDate(), at, time, something
+        when 'd' then handleNewJob robot, msg, users[0], moment().add(at, "day").toDate(), at, time, something
     else if users.length > 1
       msg.send "Be more specific, I know #{users.length} people " +
         "named like that: #{(user.name for user in users).join(", ")}"
